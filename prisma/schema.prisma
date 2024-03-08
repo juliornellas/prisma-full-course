@@ -1,0 +1,77 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // provider = "sqlite"
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  // id Int @id @default(autoincrement())
+  id String @id @default(uuid())
+  role Role @default(BASIC) //Not supported by SQLite
+  age Int?
+  name String
+  email String @unique
+  isAdmin Boolean
+  // largeNumber BigInt
+  // preferences Json //Json isn't supported by SQLite
+  // blob Bytes
+  // blob Unsupported("")
+  writtenPosts Post[] @relation("WrittenPosts")
+  favoritedPosts Post [] @relation("FavoritedPosts")
+
+  userPreference UserPreference? @relation(fields: [userPreferenceId], references: [id])
+  userPreferenceId String? @unique // One to one relation, should havejust one preference and nothing more 
+  
+  //Constraints
+  //Block level attributes
+  // So, we can never have 2 users with the SAME email and name
+  @@unique([email, name])
+
+  //Index helps for things like search, it create an index and help us for performance
+  @@index([email])
+}
+
+model UserPreference {
+  id String @id @default(uuid())
+  emailUpdates Boolean
+  user User?
+
+}
+
+model Post {
+  id String @id @default(uuid())
+  title String
+  averageRating Float //Decimal
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt //automatic fill this field when it is updated
+  author User @relation("WrittenPosts", fields: [authorId], references: [id])
+  authorId String
+  // authorId Int
+  favoritedBy User? @relation("FavoritedPosts", fields: [favoritedById], references: [id])
+  favoritedById String?
+  categories Category[] //Many to many = Linked automatic with 'posts Post[]' in model Category
+
+  //ID allows to compose the id combining attributes
+  // @@id([title, authorId])
+}
+
+model Category {
+  id String @id @default(uuid())
+  name String @unique
+  posts Post[] //Many to many = Linked automatic with 'categories Category[]' in model Post
+
+}
+
+//Not supported by SQLite
+enum Role {
+  BASIC
+  ADMIN
+}
+
